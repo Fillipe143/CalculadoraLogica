@@ -88,20 +88,26 @@ class Lexer {
         if (isOperator(char)) return new Token(char, index, TOKEN_OPERATOR);
         if (char === "(") return new Token(char, index, TOKEN_O_PAREN);
         if (char === ")") return new Token(char, index, TOKEN_O_PAREN);
-
-        if (char === "[") {
-            let literal = "";
-            while (this.#hasNext() && this.#currentChar !== "]") {
-                literal += this.#currentChar;
-                this.#next();
-            }
-            this.#next();
-
-            if (literal === "TRUE" || literal === "FALSE") return new Token(literal, index, TOKEN_BOOLEAN)
-            return new Token(`[${literal}]`, index, TOKEN_ILLEGAL);
-        }
+        if (char === "[") return this.#readBoolean();
 
         return new Token(char, index, TOKEN_ILLEGAL);
+    }
+
+    #readBoolean() {
+        const index = this.#index - 1;
+        let literal = "";
+
+        while (this.#hasNext() && this.#currentChar !== "]") {
+            literal += this.#currentChar;
+            this.#next();
+        }
+
+        if (this.#currentChar === "]") {
+            this.#next();
+            if (literal === "true" || literal === "false") return new Token(literal, index, TOKEN_BOOLEAN)
+        }
+
+        return new Token(`[${literal}`, index, TOKEN_ILLEGAL)
     }
 }
 
@@ -169,7 +175,7 @@ class Linter {
 
 // Teste do lexer
 {
-    const program = "A v (Bv~C) [TRUE]";
+    const program = "A v (Bv~C) [false]";
     const lexer = new Lexer(program);
 
     let token = lexer.nextToken();
