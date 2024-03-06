@@ -76,25 +76,8 @@ class Lexer {
         }
     }
 
-    nextToken() {
-        this.#skipWhiteSpaces()
-        if (!this.#hasNext()) return new Token("", this.#index, TOKEN_EOF);
-
-        const char = this.#currentChar;
-        const index = this.#index + 1;
-        this.#next();
-
-        if (isAlpha(char)) return new Token(char, index, TOKEN_IDENTIFIER);
-        if (isOperator(char)) return new Token(char, index, TOKEN_OPERATOR);
-        if (char === "(") return new Token(char, index, TOKEN_O_PAREN);
-        if (char === ")") return new Token(char, index, TOKEN_O_PAREN);
-        if (char === "[") return this.#readBoolean();
-
-        return new Token(char, index, TOKEN_ILLEGAL);
-    }
-
     #readBoolean() {
-        const index = this.#index - 1;
+        const index = this.#index;
         let literal = "";
 
         while (this.#hasNext() && this.#currentChar !== "]") {
@@ -109,12 +92,29 @@ class Lexer {
 
         return new Token(`[${literal}`, index, TOKEN_ILLEGAL)
     }
+
+    nextToken() {
+        this.#skipWhiteSpaces()
+        if (!this.#hasNext()) return new Token("", this.#index, TOKEN_EOF);
+
+        const char = this.#currentChar;
+        const index = this.#index + 1;
+        this.#next();
+
+        if (isAlpha(char)) return new Token(char, index, TOKEN_IDENTIFIER);
+        if (isOperator(char)) return new Token(char, index, TOKEN_OPERATOR);
+        if (char === "(") return new Token(char, index, TOKEN_O_PAREN);
+        if (char === ")") return new Token(char, index, TOKEN_C_PAREN);
+        if (char === "[") return this.#readBoolean();
+
+        return new Token(char, index, TOKEN_ILLEGAL);
+    }
 }
 
 // Linter
 class Node { }
 
-class ExpNode {
+class ExpNode extends Node {
     /**
      * @type {string}
      */
