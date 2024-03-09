@@ -109,84 +109,186 @@ class Lexer {
 
         return new Token(char, index, TOKEN_ILLEGAL);
     }
-}
 
-// Linter
-class Node { }
-
-class ExpNode extends Node {
-    /**
-     * @type {string}
-     */
-    value;
-
-    /**
-     * @param {string} value 
-     */
-    constructor(value) {
-        this.value = value;
+    *tokens() {
+        let token = this.nextToken();
+        while (token.type !== TOKEN_EOF) {
+            yield token;
+            token = this.nextToken();
+        }
+        yield token;
     }
 }
 
-class OpNode extends Node {
+// Parser
+/**
+ * 
+ * @param {IterableIterator<Token>} tokens 
+ */
+function parseExpr(tokens) {
     /**
-     * @type {Node}
+     * @type {Token[]}
      */
-    right;
+    const exprQueue = [];
 
     /**
-     * @type {Node}
+     * @type {Token[]}
      */
-    left;
+    const opsStack = [];
 
-    /**
-     * @type {number}
-     */
-    operation;
+    for (const token of tokens) {
+        switch (token.type) {
+            case TOKEN_IDENTIFIER: exprQueue.push(token); break;
+            case TOKEN_O_PAREN: opsStack.push(token); break;
+            case TOKEN_BOOLEAN: exprQueue.push(token); break;
+            case TOKEN_OPERATOR:
+                while (opsStack.length !== 0 && getPrecendence(opsStack[opsStack.length - 1]) >= getPrecendence(token)) {
+                    exprQueue.push(opsStack.pop());
+                }
+                opsStack.push(token);
+                break;
+            case TOKEN_C_PAREN:
+                while (opsStack.length !== 0 && opsStack[opsStack.length - 1].type !== TOKEN_O_PAREN) {
+                    exprQueue.push(opsStack.pop());
+                }
+                opsStack.pop();
+                break;
+        }
+    }
 
-    /**
-     * @param {Node} right 
-     * @param {Node} left 
-     */
-    constructor(operation, right, left) {
-        this.operation = operation;
-        this.right = right;
-        this.left = left;
+    while (opsStack.length != 0) {
+        exprQueue.push(opsStack.pop());
+    }
+
+    return exprQueue;
+}
+
+/**
+ * @param {Token} token 
+ */
+function getPrecendence(token) {
+    switch (token.literal) {
+        case "~": return 6;
+        case "∧": return 5;
+        case "v": return 4;
+        case "⊻": return 3;
+        case "→": return 2;
+        case "↔": return 1;
+        default: return 0;
     }
 }
 
-class Linter {
+/**
+ * @param {IterableIterator<Token>} tokens 
+ */
+function extractvariables(tokens) {
     /**
-     * @type {Lexer}
+     * @type {Set<string>}
      */
-    #lexer;
-
-    /**
-     * @param {Lexer} lexer 
-     */
-    constructor(lexer) {
-        this.#lexer = lexer;
+    const variables = new Set();
+    for (const token of tokens) {
+        if (isAlpha(token.literal)) variables.add(token.literal);
     }
 
-    generateAST() {
+    return Array.from(variables);
+}
 
+/**
+ * @param {IterableIterator<Token>} tokens 
+ */
+function executeExprs(tokens) {
+    /**
+     * @type {boolean[]}
+     */
+    let stack = [];
+    for (const token of tokens) {
+        if (token.type === TOKEN_BOOLEAN) stack.push(token.literal === "true");
+        else if (token.type === TOKEN_OPERATOR) {
+            if (token.literal === "~") {
+                stack.push(!stack.pop());
+                continue;
+            }
+
+            const right = stack.pop();
+            const left = stack.pop();
+            switch (token.literal) {
+                case "∧": stack.push(left && right); break;
+                case "v": stack.push(left || right); break;
+                case "⊻": stack.push(left !== right); break;
+                case "→": stack.push(!(left && !right)); break;
+                case "↔": stack.push(left === right); break;
+            }
+        }
     }
+
+    return stack.pop();
+}
+
+/**
+ * @param {IterableIterator<Token>} tokens 
+ * @param {string[]} variables 
+ * @param {boolean[]} values 
+ */
+function* replaceIdentifiers(tokens, variables, values) {
+    for (const token of tokens) {
+        if (token.type === TOKEN_IDENTIFIER) {
+            const i = variables.indexOf(token.literal);
+            yield new Token(String(values[i]), token.index, TOKEN_BOOLEAN);
+
+        } else {
+            yield token;
+        }
+    }
+}
+
+/**
+ * @param {IterableIterator<Token>} tokens 
+ */
+function generateTruthTable(tokens) {
+    const variables = extractvariables(tokens);
+    /**
+     * @type {string[][]}
+     */
+    const truthTable = [variables];
+
+    for (let i = 2 ** variables.length - 1; i >= 0; i--) {
+        /**
+         * @type {string[]}
+         */
+        const row = [];
+        /**
+         * @type {boolean[]}
+         */
+        const values = [];
+
+        for (let j = variables.length - 1; j >= 0; j--) {
+            const value = !!((i >> j) & 1);
+            row.push(value ? "V" : "F");
+            values.push(value);
+        }
+
+        const result = executeExprs(replaceIdentifiers(tokens, variables, values));
+        row.push(result ? "V" : "F");
+        truthTable.push(row);
+    }
+
+    return truthTable;
 }
 
 // Teste do lexer
-{
-    const program = "A v (Bv~C) [false]";
+if (false) {
+    const program = "A v (Bv~C) → [false]";
     const lexer = new Lexer(program);
 
-    let token = lexer.nextToken();
-
-    while (token.type !== TOKEN_EOF) {
+    for (const token of lexer.tokens()) {
         console.log(token);
-        token = lexer.nextToken();
     }
 }
 
-// Teste do Linter
-{
-
+if (true) {
+    const program = "A ∧ B v C";
+    const lexer = new Lexer(program);
+    const tokens = parseExpr(lexer.tokens());
+    const truthTable = generateTruthTable(tokens);
+    console.log(truthTable);
 }
