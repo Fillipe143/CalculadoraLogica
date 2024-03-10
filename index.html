@@ -1,11 +1,185 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadore</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    
+  <div class="calc">
+
+    <div class="objetos">
+      <textarea id="textarea" readonly></textarea>
+      <p id="erromsg"></p>
+    </div>
+
+    <div class="abc">
+      <button id="A" onclick="inserirCaractere(this.id)">A</button>
+      <button id="B" onclick="inserirCaractere(this.id)">B</button>
+      <button id="C" onclick="inserirCaractere(this.id)">C</button>
+      <button id="D" onclick="inserirCaractere(this.id)">D</button>
+      <button id="E" onclick="inserirCaractere(this.id)">E</button>
+      <button id="F" onclick="inserirCaractere(this.id)">F</button>
+      <button id="G" onclick="inserirCaractere(this.id)">G</button>
+      <button id="H" onclick="inserirCaractere(this.id)">H</button>
+      <button id="I" onclick="inserirCaractere(this.id)">I</button>
+      <button id="J" onclick="inserirCaractere(this.id)">J</button>
+      <button id="K" onclick="inserirCaractere(this.id)">K</button>
+      <button id="L" onclick="inserirCaractere(this.id)">L</button>
+      <button id="M" onclick="inserirCaractere(this.id)">M</button>
+      <button id="N" onclick="inserirCaractere(this.id)">N</button>
+      <button id="O" onclick="inserirCaractere(this.id)">O</button>
+      <button id="P" onclick="inserirCaractere(this.id)">P</button>
+      <button id="Q" onclick="inserirCaractere(this.id)">Q</button>
+      <button id="R" onclick="inserirCaractere(this.id)">R</button>
+      <button id="S" onclick="inserirCaractere(this.id)">S</button>
+      <button id="T" onclick="inserirCaractere(this.id)">T</button>
+      <button id="U" onclick="inserirCaractere(this.id)">U</button>
+      <button id="V" onclick="inserirCaractere(this.id)">V</button>
+      <button id="W" onclick="inserirCaractere(this.id)">W</button>
+      <button id="X" onclick="inserirCaractere(this.id)">X</button>
+      <button id="Y" onclick="inserirCaractere(this.id)">Y</button>
+      <button id="Z" onclick="inserirCaractere(this.id)">Z</button>
+    </div>
+
+    <div class="operadores">
+      <button class="limpa" onclick="limpa()">C</button>
+      <button class="apaga" onclick="apagaUltimo()">⌫</button>
+      <button id="(" onclick="inserirOperador(this.id)">(</button>
+      <button id=")" onclick="inserirOperador(this.id)">)</button>
+      <button id="→" onclick="inserirOperador(this.id)">→</button>
+      <button id="∧" onclick="inserirOperador(this.id)">∧</button>
+      <button id="↔" onclick="inserirOperador(this.id)">↔</button>
+      <button id="∨" onclick="inserirOperador(this.id)">∨</button>
+      <button id="~" onclick="inserirOperador(this.id)">~</button>
+      <button id="⊻" onclick="inserirOperador(this.id)">⊻</button>
+      <button class="verd" id="[verdadeiro]" onclick="inserirBoolean(this.id)">V</button>
+      <button class="fals" id="[false]" onclick="inserirBoolean(this.id)">F</button>
+      <button class="iguala" onclick="resultado()">=</button>
+
+    </div>
+
+  </div>
 </body>
+<script src="index.js"></script>
+<script>
+  const textarea = document.getElementById("textarea");
+  const erromsg = document.getElementById("erromsg");
+  let lastInsertions = [];
+
+  function inserirCaractere(id) {
+    if (podeAdicionarOperador()) return;
+    tirarErro();
+    lastInsertions.push("char");
+    textarea.innerHTML += id;
+  }
+
+  function inserirOperador(id) {
+    if (id === "~") {
+      if (lastInsertions[lastInsertions.length - 1] === "char") return;
+      if (lastInsertions[lastInsertions.length - 1] === "bool") return;
+      if (textarea.innerHTML[textarea.innerHTML.length - 1] !== ")") {
+        tirarErro();
+        lastInsertions.push("op");
+        textarea.innerHTML += id;
+      }
+      return;
+    }
+    if (id === "(") {
+      if (textarea.innerHTML[textarea.innerHTML.length - 1] !== ")") {
+        if (lastInsertions.length === 0 || lastInsertions[lastInsertions.length - 1] === "op") {
+          tirarErro();
+          lastInsertions.push("op");
+          textarea.innerHTML += id;
+        }
+      }
+      return;
+    }
+    if (id === ")" && numeroDeParentesesAberto() <= 0) return;
+
+    if (!podeAdicionarOperador()) return;
+    tirarErro();
+    lastInsertions.push("op");
+    textarea.innerHTML += id;
+  }
+
+  function inserirBoolean(id) {
+    if (podeAdicionarOperador()) return;
+    tirarErro();
+    lastInsertions.push("bool");
+    textarea.innerHTML += id;
+  }
+
+  function limpa() {
+    tirarErro();
+    textarea.innerHTML = "";
+    lastInsertions = [];
+  }
+
+  function apagaUltimo() {
+    tirarErro();
+    const type = lastInsertions.pop();
+    if (type !== "bool") textarea.innerHTML = textarea.innerHTML.substr(0, textarea.innerHTML.length - 1);
+    else {
+      while (textarea.innerHTML[textarea.innerHTML.length - 1] !== "[") {
+        textarea.innerHTML = textarea.innerHTML.substr(0, textarea.innerHTML.length - 1);
+      }
+      textarea.innerHTML = textarea.innerHTML.substr(0, textarea.innerHTML.length - 1);
+    }
+  }
+
+  function podeAdicionarOperador() {
+    if (textarea.innerHTML.length === 0) return false;
+    const lastChar = textarea.innerHTML[textarea.innerHTML.length - 1];
+    const lastInsertionType = lastInsertions[lastInsertions.length - 1];
+    if (lastInsertionType === "char" || lastInsertionType === "bool") return true;
+    if (lastChar === ")") return true;
+
+    return false;
+  }
+
+  function numeroDeParentesesAberto() {
+    let num = 0;
+
+    for (let c of textarea.innerHTML) {
+      if (c === "(") num++;
+      else if (c === ")") num--;
+    }
+
+    return num;
+  }
+
+  function resultado() {
+    if (numeroDeParentesesAberto() !== 0) {
+      botarErro("Fecha os parenteses ai");
+      return;
+    }
+    if (lastInsertions[lastInsertions.length - 1] === "op" && !textarea.innerHTML.endsWith(")")) {
+      botarErro("Ta errado isso ai");
+      return;
+    }
+
+    const lexer = new Lexer(textarea.innerHTML);
+    const tokens = parseExpr(lexer.tokens());
+    const truthTable = generateTruthTable(tokens);
+    truthTable[0].push("*");
+    console.log(truthTable);
+  }
+
+  function tirarErro() {
+    textarea.style.color = "black";
+    erromsg.style.visibility = "hidden";
+  }
+
+  function botarErro(mensagem) {
+    textarea.style.color = "red";
+    erromsg.innerText = mensagem;
+    erromsg.style.visibility = "visible";
+    console.log(mensagem);
+  }
+</script>
+
 </html>

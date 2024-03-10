@@ -285,7 +285,7 @@ if (false) {
     }
 }
 
-if (true) {
+if (false) {
     const program = "A ∧ B v C";
     const lexer = new Lexer(program);
     const tokens = parseExpr(lexer.tokens());
