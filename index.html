@@ -56,18 +56,28 @@
       <button id="∨" onclick="inserirOperador(this.id)">∨</button>
       <button id="~" onclick="inserirOperador(this.id)">~</button>
       <button id="⊻" onclick="inserirOperador(this.id)">⊻</button>
-      <button class="verd" id="[verdadeiro]" onclick="inserirBoolean(this.id)">V</button>
+      <button class="verd" id="[true]" onclick="inserirBoolean(this.id)">V</button>
       <button class="fals" id="[false]" onclick="inserirBoolean(this.id)">F</button>
       <button class="iguala" onclick="resultado()">=</button>
 
     </div>
 
   </div>
+  <div class="table">
+    <p id="tableTitle">Tralala é uma tautologia</p><br>
+    <table id="table"> </table>
+  </div>
+
+
 </body>
+
 <script src="index.js"></script>
 <script>
   const textarea = document.getElementById("textarea");
   const erromsg = document.getElementById("erromsg");
+  const table = document.getElementById("table");
+  const tableDiv = document.getElementsByClassName("table")[0];
+  const tableTitle = document.getElementById("tableTitle");
   let lastInsertions = [];
 
   function inserirCaractere(id) {
@@ -166,7 +176,22 @@
     const tokens = parseExpr(lexer.tokens());
     const truthTable = generateTruthTable(tokens);
     truthTable[0].push("*");
-    console.log(truthTable);
+
+    let tableText = "";
+    let isFirst = true;
+    for (const rows of truthTable) {
+      tableText += "<tr>"
+      for (const char of rows) {
+        if (isFirst) tableText += `<th>${char}</th>`
+        else tableText += `<td>${char}</td>`;
+      }
+      tableText += "</tr>";
+      isFirst = false;
+    }
+
+    table.innerHTML = tableText;
+    tableTitle.innerText = textarea.innerHTML + " é uma " + getType(truthTable);
+    tableDiv.style.visibility = "visible";
   }
 
   function tirarErro() {
@@ -178,7 +203,19 @@
     textarea.style.color = "red";
     erromsg.innerText = mensagem;
     erromsg.style.visibility = "visible";
-    console.log(mensagem);
+  }
+
+  function getType(truthTable) {
+    let containsTrue = false;
+    let containsFalse = false;
+    for (let i = 1; i < truthTable.length; i++) {
+      if (truthTable[i][truthTable[i].length - 1] === "V") containsTrue = true;
+      else containsFalse = true;
+    }
+
+    if (containsTrue && !containsFalse) return "Tautologia";
+    if (!containsTrue && containsFalse) return "Contradição";
+    return "Contigencia";
   }
 </script>
 

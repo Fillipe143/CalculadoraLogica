@@ -15,7 +15,8 @@
   height: 40px;
   background-color: white;
 }
-p {
+
+#erromsg {
   padding: 4px;
   background-color: white;
   color: red;
@@ -79,4 +80,32 @@ button {
 
 html {
   background-color: rgb(39, 39, 41);
+}
+
+.table {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  position: relative;
+  color: white;
+  visibility: hidden;
+}
+
+table {
+  background-color: #282828;
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+td, th {
+  border: 1px solid #181818;
+  text-align: center;
+  padding: 8px;
+}
+
+tr:nth-child(even) {
+  background-color: #181818;
 }
